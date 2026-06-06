@@ -5,189 +5,237 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>WHERE 初回ログインオンボーディング モックアップ (PR #2854 / Issue #2853)</title>
 <style>
+  /* ===== 実アプリのトークンを反映 ===== */
   :root{
-    --primary: 207 90% 61%;
-    --primary-foreground: 0 0% 100%;
-    --background: 0 0% 100%;
-    --foreground: 220 13% 9%;
-    --muted: 220 9% 92%;
-    --muted-foreground: 220 9% 46%;
-    --border: 220 13% 88%;
+    /* MUI theme (src/theme/palette.ts) */
+    --primary-main:#00405D;      /* W_DEEP_BLUE[500] = ヘッダー背景 */
+    --primary-dark:#002C40;
+    --secondary-main:#2196f3;    /* W_BLUE[500] = AI探索ボタン */
+    --indigo-800:#283593;        /* 新AI探索グラデ */
+    --bg-blue:#F2F6F8;           /* W_DEEP_BLUE[50] = リスト背景 */
+    --white:#fff;
+    --text:#1a2730;
+    --muted:#667;
+    --border:#e2e8ef;
+    /* shadcn/tailwind (components/ui) — オンボーディングダイアログ側 */
+    --ui-primary:207 90% 61%;
+    --ui-muted-foreground:220 9% 46%;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
-    color:hsl(var(--foreground));background:#eef1f5;line-height:1.6;
-  }
-  .topbar{
-    background:#fff;border-bottom:1px solid hsl(var(--border));padding:10px 20px;
-    display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;flex-wrap:wrap
-  }
-  .topbar h1{font-size:15px;font-weight:700}
-  .topbar .badge{font-size:11px;background:hsl(var(--muted));color:hsl(var(--muted-foreground));padding:3px 8px;border-radius:999px}
-  .topbar a{font-size:12px;color:hsl(var(--primary));text-decoration:none}
-  .tabs{display:flex;gap:8px;padding:14px 20px 0;flex-wrap:wrap}
-  .tab{
-    font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px 8px 0 0;border:1px solid transparent;
-    background:transparent;cursor:pointer;color:hsl(var(--muted-foreground))
-  }
-  .tab.active{background:#fff;border-color:hsl(var(--border));border-bottom-color:#fff;color:hsl(var(--foreground))}
-  .stage-wrap{padding:0 20px 40px}
-  .stage{
-    position:relative;background:#fff;border:1px solid hsl(var(--border));border-radius:0 12px 12px 12px;
-    height:640px;overflow:hidden
-  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--text);background:#dfe4ea}
 
-  /* ---- app background (土地リスト風) ---- */
-  .app-shell{display:flex;height:100%;filter:saturate(.95)}
-  .sidebar{width:220px;background:#f7f8fa;border-right:1px solid hsl(var(--border));padding:16px 12px;flex-shrink:0}
-  .sidebar .logo{font-weight:800;font-size:18px;color:hsl(var(--primary));margin-bottom:20px;padding:0 6px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;color:#475569;margin-bottom:2px}
-  .nav-item.active{background:hsl(var(--primary)/.12);color:hsl(var(--primary));font-weight:700}
-  .nav-item .dot{width:16px;height:16px;border-radius:4px;background:currentColor;opacity:.5}
-  .main{flex:1;display:flex;flex-direction:column;min-width:0}
-  .main-head{padding:16px 22px;border-bottom:1px solid hsl(var(--border));display:flex;align-items:center;justify-content:space-between}
-  .main-head h2{font-size:16px}
-  .userbtn{position:relative}
-  .avatar{width:34px;height:34px;border-radius:999px;background:hsl(var(--primary));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer}
-  .table{padding:14px 22px;overflow:auto}
-  .row{display:grid;grid-template-columns:1.4fr 1fr 1fr .8fr;gap:12px;padding:12px 10px;border-bottom:1px solid hsl(var(--border));font-size:13px;align-items:center}
-  .row.head{font-weight:700;color:hsl(var(--muted-foreground));font-size:12px;background:#fafbfc}
-  .skel{height:10px;border-radius:6px;background:hsl(var(--muted))}
-  .pill{font-size:11px;padding:2px 8px;border-radius:999px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));width:fit-content}
+  /* ===== モック操作バー（製品UIではない） ===== */
+  .mockbar{background:#0f1722;color:#cdd6e2;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}
+  .mockbar strong{color:#fff;font-size:13px}
+  .mockbar .chip{background:#22304a;padding:2px 8px;border-radius:999px}
+  .mockbar a{color:#7cc4ff;text-decoration:none}
+  .mockbar .spacer{flex:1}
+  .seg{display:flex;background:#1c2940;border-radius:8px;padding:3px}
+  .seg button{background:transparent;border:none;color:#9fb0c8;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer}
+  .seg button.active{background:#2196f3;color:#fff}
 
-  /* ---- modal overlay ---- */
-  .overlay{position:absolute;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:30}
-  .dialog{
-    width:min(460px,92%);background:#fff;border-radius:16px;box-shadow:0 24px 60px -12px rgba(0,0,0,.35);
-    padding:26px 26px 20px;animation:pop .18s ease-out
-  }
-  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
-  .dialog .x{position:absolute}
-  .dlg-title{font-size:19px;font-weight:800;margin-bottom:6px}
-  .dlg-desc{font-size:13.5px;color:hsl(var(--muted-foreground));margin-bottom:18px}
-  ol.steps{list-style:none;display:flex;flex-direction:column;gap:16px;margin:6px 0 20px}
+  /* ===== 実アプリ ヘッダー (src/components/layouts/header/Header.tsx) ===== */
+  .app{min-height:calc(100vh - 38px);display:flex;flex-direction:column;position:relative}
+  .header{height:64px;background:var(--primary-main);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:10}
+  .h-left{display:flex;align-items:center;height:100%}
+  .logo{height:40px;margin-right:32px}
+  .navbtn{display:flex;align-items:center;height:100%;padding:0 16px;color:#fff;font-size:14px;font-weight:500;letter-spacing:.02em;cursor:pointer;text-decoration:none}
+  .navbtn.active{background:rgba(255,255,255,.16)}
+  .dropdown{display:flex;align-items:center;gap:4px;height:100%;padding:0 12px;color:#fff;font-size:14px;font-weight:500;cursor:pointer}
+  .dropdown.active{background:rgba(255,255,255,.16)}
+  .h-actions{display:flex;align-items:center;gap:12px;margin-left:12px}
+  .btn{font-size:13px;font-weight:700;border-radius:6px;padding:7px 14px;cursor:pointer;border:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+  .btn-grad{background:linear-gradient(135deg,var(--indigo-800),var(--secondary-main));color:#fff}
+  .btn-secondary{background:var(--secondary-main);color:#fff}
+  .btn-outline-white{background:transparent;border:1px solid #fff;color:#fff}
+  .h-right{display:flex;align-items:center;gap:14px;position:relative}
+  .iconbtn{color:#fff;display:flex;align-items:center;cursor:pointer;opacity:.95;position:relative}
+  .bell-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:999px;background:#ff5252;border:1.5px solid var(--primary-main)}
+  .avatar{width:34px;height:34px;border-radius:999px;background:#5b86a0;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer;border:2px solid rgba(255,255,255,.5)}
+
+  /* ===== リスト画面ボディ (src/app/[lng]/list/land/page.tsx) ===== */
+  .body{flex:1;background:var(--bg-blue);padding:0;display:flex;flex-direction:column}
+  .listcard{background:#fff;flex:1;display:flex;flex-direction:column}
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px}
+  .ltab{padding:13px 18px;font-size:13px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer}
+  .ltab.active{color:var(--primary-main);border-bottom-color:var(--primary-main)}
+  .toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .tool{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#33414f;border:1px solid var(--border);background:#fff;padding:7px 12px;border-radius:7px;cursor:pointer}
+  .tool.primary{background:var(--secondary-main);color:#fff;border-color:var(--secondary-main)}
+  .count{margin-left:auto;font-size:12px;color:var(--muted)}
+  .grid{font-size:13px;overflow:auto}
+  .grow{display:grid;grid-template-columns:40px 1.6fr 1fr 0.8fr 0.9fr 1.1fr 0.9fr;gap:0;border-bottom:1px solid #eef2f6;align-items:center}
+  .grow.head{background:#f6f9fb;color:#5b6b78;font-weight:700;font-size:12px;position:sticky;top:0}
+  .gc{padding:11px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cbox{width:15px;height:15px;border:1.5px solid #b9c6d2;border-radius:3px;display:inline-block}
+  .tag{font-size:11px;padding:2px 7px;border-radius:4px;background:#e9f3fb;color:#1d72b8}
+  .tag.g{background:#e9f7ee;color:#1f9254}
+
+  /* ===== オンボーディングダイアログ (OnboardingDialog.tsx / shadcn Dialog) ===== */
+  .overlay{position:absolute;inset:0;background:rgba(2,8,20,.55);backdrop-filter:blur(1.5px);display:flex;align-items:center;justify-content:center;z-index:60}
+  .dialog{width:min(448px,92%);background:#fff;border-radius:14px;box-shadow:0 24px 60px -12px rgba(0,0,0,.4);padding:28px 26px 22px;position:relative;animation:pop .18s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+  .x{position:absolute;top:16px;right:16px;color:#9aa6b2;cursor:pointer}
+  .dlg-title{font-size:19px;font-weight:800;margin-bottom:7px}
+  .dlg-desc{font-size:13.5px;color:hsl(var(--ui-muted-foreground));margin-bottom:20px;line-height:1.6}
+  ol.steps{list-style:none;display:flex;flex-direction:column;gap:16px;margin:6px 0 22px}
   ol.steps li{display:flex;gap:12px;align-items:flex-start}
-  .step-ic{width:34px;height:34px;border-radius:999px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-ic{width:32px;height:32px;border-radius:999px;background:hsl(var(--ui-primary)/.1);color:hsl(var(--ui-primary));display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .step-t{font-size:14px;font-weight:700}
-  .step-d{font-size:13px;color:hsl(var(--muted-foreground))}
-  .footer{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
-  .btn{font-size:14px;font-weight:700;padding:9px 18px;border-radius:9px;border:none;cursor:pointer}
-  .btn-ghost{background:transparent;color:hsl(var(--muted-foreground))}
-  .btn-primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+  .step-d{font-size:13px;color:hsl(var(--ui-muted-foreground));margin-top:1px}
+  .footer{display:flex;justify-content:flex-end;gap:10px}
+  .ui-btn{font-size:14px;font-weight:700;padding:9px 18px;border-radius:8px;border:none;cursor:pointer}
+  .ui-ghost{background:transparent;color:hsl(var(--ui-muted-foreground))}
+  .ui-primary{background:hsl(var(--ui-primary));color:#fff}
 
-  /* ---- user menu (reopen) ---- */
-  .menu{position:absolute;right:0;top:44px;background:#fff;border:1px solid hsl(var(--border));border-radius:10px;box-shadow:0 12px 30px -8px rgba(0,0,0,.25);width:200px;padding:6px;z-index:20}
-  .menu-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 10px;border-radius:7px}
-  .menu-item.hl{background:hsl(var(--primary)/.08);color:hsl(var(--primary));font-weight:700}
-  .menu-sep{height:1px;background:hsl(var(--border));margin:4px 2px}
+  /* ===== ユーザーメニュー (UserMenuButton.tsx, 再表示導線) ===== */
+  .usermenu{position:absolute;right:0;top:46px;width:240px;background:#fff;border-radius:10px;box-shadow:0 14px 40px -8px rgba(0,0,0,.3);padding:6px;z-index:50;font-size:13px;color:#33414f}
+  .mi{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:7px;cursor:pointer}
+  .mi:hover{background:#f3f6f9}
+  .mi.hl{background:hsl(var(--ui-primary)/.1);color:hsl(var(--ui-primary));font-weight:700}
+  .mi.support{color:var(--primary-main);font-weight:600}
+  .mi.logout{color:#d33}
+  .msep{height:1px;background:var(--border);margin:4px 6px}
+  .mcap{font-size:11px;color:#94a3b0;padding:6px 12px 2px}
 
-  .note{font-size:12px;color:hsl(var(--muted-foreground));padding:14px 20px;max-width:880px}
   .hidden{display:none}
+  .note{font-size:12px;color:#5b6b78;padding:14px 18px;background:#eef2f6;line-height:1.7}
+  .callout{position:absolute;z-index:55;background:#111c2b;color:#fff;font-size:12px;padding:6px 10px;border-radius:7px;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .callout:after{content:"";position:absolute;border:6px solid transparent}
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <h1>WHERE 初回ログイン オンボーディング — 静的モックアップ</h1>
-    <span class="badge">Phase 0</span>
-    <span class="badge">Issue #2853</span>
-    <span class="badge">PR #2854</span>
-    <a href="https://github.com/PenetratorInc/where-web/pull/2854" target="_blank" rel="noopener">PRを開く →</a>
+  <!-- モック操作バー -->
+  <div class="mockbar">
+    <strong>WHERE オンボーディング 静的モック</strong>
+    <span class="chip">既存画面に重畳 / Phase 0</span>
+    <span class="chip">Issue #2853</span>
+    <a href="https://github.com/PenetratorInc/where-web/pull/2854" target="_blank" rel="noopener">PR #2854 ↗</a>
+    <span class="spacer"></span>
+    <div class="seg">
+      <button data-view="welcome" class="active">① 初回ログイン</button>
+      <button data-view="skipped">② スキップ後</button>
+      <button data-view="reopen">③ 再表示メニュー</button>
+    </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" data-view="welcome">① 初回ログイン（ウェルカム）</button>
-    <button class="tab" data-view="skipped">② スキップ後（リストのみ）</button>
-    <button class="tab" data-view="reopen">③ 再表示メニュー</button>
-  </div>
-
-  <div class="stage-wrap">
-    <div class="stage">
-      <!-- shared app background -->
-      <div class="app-shell">
-        <aside class="sidebar">
-          <div class="logo">WHERE</div>
-          <div class="nav-item active"><span class="dot"></span>土地リスト</div>
-          <div class="nav-item"><span class="dot"></span>AI探索</div>
-          <div class="nav-item"><span class="dot"></span>探索結果</div>
-          <div class="nav-item"><span class="dot"></span>保存リスト</div>
-          <div class="nav-item"><span class="dot"></span>設定</div>
-        </aside>
-        <div class="main">
-          <div class="main-head">
-            <h2>土地リスト</h2>
-            <div class="userbtn">
-              <div class="avatar" id="avatar">TM</div>
-              <!-- user menu (view 3) -->
-              <div class="menu hidden" id="userMenu">
-                <div class="menu-item">プロフィール</div>
-                <div class="menu-item">設定</div>
-                <div class="menu-sep"></div>
-                <div class="menu-item hl">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                  使い方ガイドを見る
-                </div>
-                <div class="menu-sep"></div>
-                <div class="menu-item">ログアウト</div>
-              </div>
-            </div>
-          </div>
-          <div class="table">
-            <div class="row head"><span>物件・土地</span><span>所在地</span><span>面積</span><span>状態</span></div>
-            <!-- rows -->
-            <div class="row"><div><div class="skel" style="width:70%"></div></div><div class="skel" style="width:55%"></div><div class="skel" style="width:40%"></div><span class="pill">未確認</span></div>
-            <div class="row"><div><div class="skel" style="width:60%"></div></div><div class="skel" style="width:65%"></div><div class="skel" style="width:35%"></div><span class="pill">未確認</span></div>
-            <div class="row"><div><div class="skel" style="width:80%"></div></div><div class="skel" style="width:45%"></div><div class="skel" style="width:50%"></div><span class="pill">未確認</span></div>
-            <div class="row"><div><div class="skel" style="width:50%"></div></div><div class="skel" style="width:60%"></div><div class="skel" style="width:30%"></div><span class="pill">未確認</span></div>
-            <div class="row"><div><div class="skel" style="width:75%"></div></div><div class="skel" style="width:50%"></div><div class="skel" style="width:45%"></div><span class="pill">未確認</span></div>
-            <div class="row"><div><div class="skel" style="width:65%"></div></div><div class="skel" style="width:58%"></div><div class="skel" style="width:38%"></div><span class="pill">未確認</span></div>
-          </div>
+  <div class="app">
+    <!-- ===== 実アプリ ヘッダー（既存画面） ===== -->
+    <div class="header">
+      <div class="h-left">
+        <img class="logo" src="data:image/png;base64,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" alt="WHERE" />
+        <a class="navbtn">探索</a>
+        <div class="dropdown active">土地管理 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg></div>
+        <a class="navbtn">DM依頼予定</a>
+        <div class="h-actions">
+          <span class="btn btn-grad">新AI探索</span>
+          <span class="btn btn-secondary">AI探索</span>
+          <span class="btn btn-outline-white">セルフ探索</span>
         </div>
       </div>
-
-      <!-- onboarding dialog (view 1) -->
-      <div class="overlay" id="overlay">
-        <div class="dialog">
-          <div class="dlg-title">WHEREへようこそ！</div>
-          <div class="dlg-desc">まずはAI探索で、お探しのエリアの物件を見つけてみましょう。3ステップで使い方をご案内します。</div>
-          <ol class="steps">
-            <li>
-              <span class="step-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
-              <div><div class="step-t">1. エリアを選んでAI探索</div><div class="step-d">探したいエリアを指定して、AI探索を実行します。</div></div>
-            </li>
-            <li>
-              <span class="step-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></span>
-              <div><div class="step-t">2. 探索結果を確認</div><div class="step-d">条件に合った物件・土地の候補が一覧で表示されます。</div></div>
-            </li>
-            <li>
-              <span class="step-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
-              <div><div class="step-t">3. 気になる物件をリストに保存</div><div class="step-d">保存した物件はリストでまとめて管理・アプローチできます。</div></div>
-            </li>
-          </ol>
-          <div class="footer">
-            <button class="btn btn-ghost">あとで</button>
-            <button class="btn btn-primary">AI探索を始める</button>
+      <div class="h-right">
+        <span class="iconbtn" title="タスク状況"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg></span>
+        <span class="iconbtn" title="通知"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-dot"></span></span>
+        <div class="avatar" id="avatar">TM</div>
+        <!-- ③ ユーザーメニュー -->
+        <div class="usermenu hidden" id="userMenu">
+          <div class="mcap">高田 真彰 / メンバー</div>
+          <div class="msep"></div>
+          <div class="mi support">お問い合わせ</div>
+          <div class="msep"></div>
+          <div class="mi hl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            使い方ガイドを見る
           </div>
+          <div class="msep"></div>
+          <div class="mi">設定</div>
+          <div class="msep"></div>
+          <div class="mi logout">ログアウト</div>
         </div>
       </div>
     </div>
 
-    <p class="note">
-      ※ これは PR #2854（Phase 0）の <b>静的モックアップ</b>です。実データ・実APIには接続していません。上部タブで状態を切り替えられます。<br>
-      画面下地（土地リスト）はログイン直後の現状の着地点を模したもの。元要望の「数字目標／WBS自動生成」は依存機能が未実装のため、Phase 0 では既存コア価値（AI探索 → 結果確認 → リスト保存）への誘導に絞っています。
-    </p>
+    <!-- ===== リスト画面ボディ（既存画面） ===== -->
+    <div class="body">
+      <div class="listcard">
+        <div class="tabs">
+          <div class="ltab active">すべて</div>
+          <div class="ltab">ゴミ箱</div>
+        </div>
+        <div class="toolbar">
+          <span class="tool"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>絞り込み</span>
+          <span class="tool">所有者情報を取得</span>
+          <span class="tool"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>エクスポート</span>
+          <span class="count">全 128 件</span>
+        </div>
+        <div class="grid">
+          <div class="grow head">
+            <div class="gc"><span class="cbox"></span></div>
+            <div class="gc">住所</div><div class="gc">地番</div><div class="gc">地目</div>
+            <div class="gc">地積(㎡)</div><div class="gc">用途地域</div><div class="gc">リスト追加日</div>
+          </div>
+          <!-- 代表的なダミー行（実データではありません） -->
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">東京都世田谷区桜丘1丁目</div><div class="gc">12-3</div><div class="gc">宅地</div><div class="gc">198.45</div><div class="gc"><span class="tag">第一種住居</span></div><div class="gc">2026/06/05</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">神奈川県横浜市青葉区美しが丘2</div><div class="gc">45-1</div><div class="gc">宅地</div><div class="gc">241.10</div><div class="gc"><span class="tag g">近隣商業</span></div><div class="gc">2026/06/05</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">埼玉県さいたま市浦和区高砂3</div><div class="gc">7-22</div><div class="gc">畑</div><div class="gc">512.00</div><div class="gc"><span class="tag">市街化調整</span></div><div class="gc">2026/06/04</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">千葉県船橋市本町6丁目</div><div class="gc">3-8</div><div class="gc">宅地</div><div class="gc">156.78</div><div class="gc"><span class="tag">商業地域</span></div><div class="gc">2026/06/04</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">東京都杉並区荻窪4丁目</div><div class="gc">19-5</div><div class="gc">宅地</div><div class="gc">203.33</div><div class="gc"><span class="tag g">準工業</span></div><div class="gc">2026/06/03</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">東京都練馬区石神井町8</div><div class="gc">2-14</div><div class="gc">山林</div><div class="gc">388.90</div><div class="gc"><span class="tag">第一種低層</span></div><div class="gc">2026/06/03</div></div>
+          <div class="grow"><div class="gc"><span class="cbox"></span></div><div class="gc">神奈川県川崎市中原区小杉町1</div><div class="gc">55-2</div><div class="gc">宅地</div><div class="gc">174.20</div><div class="gc"><span class="tag">商業地域</span></div><div class="gc">2026/06/02</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ① オンボーディングダイアログ -->
+    <div class="overlay" id="overlay">
+      <div class="dialog">
+        <span class="x"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <div class="dlg-title">WHEREへようこそ！</div>
+        <div class="dlg-desc">まずはAI探索で、お探しのエリアの物件を見つけてみましょう。3ステップで使い方をご案内します。</div>
+        <ol class="steps">
+          <li>
+            <span class="step-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+            <div><div class="step-t">1. エリアを選んでAI探索</div><div class="step-d">探したいエリアを指定して、AI探索を実行します。</div></div>
+          </li>
+          <li>
+            <span class="step-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></span>
+            <div><div class="step-t">2. 探索結果を確認</div><div class="step-d">条件に合った物件・土地の候補が一覧で表示されます。</div></div>
+          </li>
+          <li>
+            <span class="step-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+            <div><div class="step-t">3. 気になる物件をリストに保存</div><div class="step-d">保存した物件はリストでまとめて管理・アプローチできます。</div></div>
+          </li>
+        </ol>
+        <div class="footer">
+          <button class="ui-btn ui-ghost">あとで</button>
+          <button class="ui-btn ui-primary">AI探索を始める</button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <p class="note" id="note">
+    <b>① 初回ログイン</b>：既存のリスト画面（ヘッダー・ナビ・一覧はすべて実アプリの構造／カラーを反映）に、PR #2854 のウェルカムダイアログを重畳。
+    元要望の「数字目標／WBS自動生成」は依存機能が未実装のため、Phase 0 では既存コア価値（AI探索 → 結果確認 → リスト保存）への誘導に絞っています。
+    ※ヘッダー＝MUI primary <code>#00405D</code>、ダイアログ＝shadcn/ui primary。一覧の行データはダミーで、実データ・実APIには未接続です。
+  </p>
+
 <script>
-  const tabs = document.querySelectorAll('.tab');
-  const overlay = document.getElementById('overlay');
-  const userMenu = document.getElementById('userMenu');
-  tabs.forEach(t=>t.addEventListener('click',()=>{
-    tabs.forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    const v=t.dataset.view;
-    overlay.classList.toggle('hidden', v!=='welcome');
-    userMenu.classList.toggle('hidden', v!=='reopen');
+  const btns=document.querySelectorAll('.seg button');
+  const overlay=document.getElementById('overlay');
+  const userMenu=document.getElementById('userMenu');
+  const note=document.getElementById('note');
+  const texts={
+    welcome:'<b>① 初回ログイン</b>：既存のリスト画面（実アプリの構造／カラーを反映）に、PR #2854 のウェルカムダイアログを重畳。Phase 0 は AI探索→結果確認→リスト保存 への誘導に絞り、未実装の目標/WBSはツアーから除外。閉じる/「あとで」はスキップ扱い。',
+    skipped:'<b>② スキップ後</b>：ダイアログを閉じた（=スキップした）状態。完了/スキップは localStorage にユーザーID別＋バージョンで記録され、次回以降は自動表示されません（Phase 1 でAPI移行予定）。',
+    reopen:'<b>③ 再表示メニュー</b>：右上のユーザーメニューに追加した「使い方ガイドを見る」（<code>onboarding.reopenMenu</code>）。一度スキップ/完了したユーザーはここからツアーを再表示できます。'
+  };
+  btns.forEach(b=>b.addEventListener('click',()=>{
+    btns.forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    const v=b.dataset.view;
+    overlay.classList.toggle('hidden',v!=='welcome');
+    userMenu.classList.toggle('hidden',v!=='reopen');
+    note.innerHTML=texts[v];
   }));
 </script>
 </body>
